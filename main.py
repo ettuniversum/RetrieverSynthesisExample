@@ -19,19 +19,23 @@ qa_prompt_tmpl = (
     "Given the context information and not prior knowledge, "
     "answer the query.\n"
     "Please reference functions, if-statements, or lines of code if possible.\n"
+    "Please give minimal mitigation examples.\n"
     "Query: {query_str}\n"
     "Answer: "
 )
 
 def example_retriever_synthesis():
     current_dir = getcwd()
-    file_name = current_dir+'\\'+'conicsec.cpp'
+    file = 'conicsec.cpp'
+    #file = 'line.cpp'
+    file_name = current_dir+'\\'+ file
     reader = SimpleDirectoryReader(input_files=[file_name])
     documents = reader.load_data(num_workers=4)
     splitter = SentenceSplitter(chunk_size=512)
     nodes = splitter.get_nodes_from_documents(documents)
     retriever = BM25Retriever.from_defaults(nodes=nodes, similarity_top_k=2)
 
+    #line_of_code = 'while (i != last) {'
     line_of_code = 'double b = 0.5*xC0.c[1]/xC0.c[0];'
 
     nodes = retriever.retrieve(file_name + ' ' + line_of_code)
@@ -43,7 +47,9 @@ def example_retriever_synthesis():
 
     response_synthesizer = get_response_synthesizer(llm=llm, text_qa_template=qa_template, response_mode="compact")
 
-    query_str = f"How does a shadowed local variable result in a vulnerability with this line of code {line_of_code}?"
+    #report_msg = 'changing xs on every loop'
+    report_msg = 'shadowed local variable'
+    query_str = f"How is {report_msg} a vulnerability with this line of code {line_of_code}?"
 
     start_time = time.time()
     response = response_synthesizer.get_response(
